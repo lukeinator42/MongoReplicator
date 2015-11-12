@@ -3,7 +3,8 @@ var http = require('http');
 var through = require('through2');
 var mongoose = require('mongoose');
 var express = require('express');
-var bodyParser = require('body-parser')
+var bodyParser = require('body-parser');
+ var request = require('request');
 var app = express();
 
 //app config
@@ -145,6 +146,68 @@ app.delete('/doc/:id', function(req, res) {
 			});
 	    }
 	);
+});
+
+app.get('/sync', function (req, res) {
+	request.get('http://localhost:'+process.argv[4]+'/log', function (error, response, body) {
+	  if (!error && response.statusCode == 200) {
+	    res.send(body);
+	    
+	    var bodyObject = JSON.parse(body);
+
+	    bodyObject.forEach(function(item) {	
+
+		    Log.findOne({_id: item.objectId})
+		    .sort({logId: -1})
+		    .exec(function(err, doc) {
+			    //console.log(item);
+			    //console.log(doc);
+			    if(doc==null
+			    	||(item.timestamp>doc.timestamp)
+			    	||(item.timestamp==doc.timestamp&&item.version>doc.item)
+			    	||(item.timestamp==doc.timestamp&&item.version==doc.item&&item.random>doc.random)) {
+			    	request.get('http://localhost:'+process.argv[4]+'/doc/'+item.objectId, function (error, response, body) {
+			    		body = body.replace('[','');
+			    		body = body.replace(']','');
+			    		
+			    		
+
+			    		if(item.eventType=="Insert" && body.length>2) {
+			    			var insertObject = JSON.parse(body);
+			    			var id = insertObject._id;
+			    			delete insertObject._id;
+
+			    			if (id) {
+    							Note.update({_id: id}, insertObject, {upsert: true}, function (err) {console.log(err);});
+							} else {
+								var note = new Note(insertObject);
+								note.save(function (err) {
+								  if (err) // ...
+								  	res.send('error:' + err);
+								  else
+									res.send("success!" + note);
+								});
+							}
+
+			    			console.log(insertObject);
+			    			
+			    		} else if(item.eventType=="Delete" && body.length>2) {
+			    			var insertObject = JSON.parse(body);
+			    			var id = insertObject._id;
+
+			    			if(id) {
+			    				Note.remove({ _id: id }, function(err) {
+								    if(err)
+								    	console.log(err);
+								});
+			    			}
+			    		}
+			    	});
+			    }	
+		    });
+	  	});
+	  }
+	});
 });
 
 app.get('/deleteAllLogs', function (req, res) {
