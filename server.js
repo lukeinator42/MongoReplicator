@@ -1,25 +1,117 @@
+//includes
 var http = require('http');
 var through = require('through2');
+var mongoose = require('mongoose');
+var express = require('express');
+var bodyParser = require('body-parser')
+var app = express();
 
-  var express = require('express');
-    var app = express();
-    
- function write (buffer, encoding, next) {
-    this.push(buffer.toString().toUpperCase());
-    next();
-}
+//app config
+app.use( bodyParser.json() );  
+app.use(bodyParser.urlencoded({
+  extended: true
+}));
 
-var stream = through(write);
+//mongodb and schemas
+mongoose.connect('mongodb://localhost/'+process.argv[2]);
 
+var Note = mongoose.model('Note', { title: String, note: String });
+
+var Log = mongoose.model('Log', {logId: Number,
+								 objectId: String, 
+								 eventType: String, 
+								 timestamp: Date, 
+								 version: Number, 
+								 random: Number});
+
+var SyncLog = mongoose.model('SyncLog', {serverId: String, maxLogId: Number});
+
+
+//display servers docs on homepage
 app.get('/', function (req, res) {
-  res.send('Hello World!');
+
+	Note.find().exec(function (err, note) {
+		if (err) return handleError(err);
+		  res.send(note);
+	});
 });
 
-app.post('/home', function(req, res) { 
-        req.pipe(stream).pipe(res);
+//display log
+app.get('/log', function (req, res) {
+
+	Log.find().exec(function (err, log) {
+		if (err) return handleError(err);
+		  res.send(log);
+	});
 });
 
-var server = app.listen(process.argv[2], function () {
+//post a doc to the server
+app.post('/doc', function(req, res) { 
+	console.log(req.body);
+
+	//post doc
+	var note = new Note(req.body);
+	note.save(function (err) {
+	  if (err) // ...
+	  	res.send('error:' + err);
+	  else
+		res.send("success!" + note);
+	});
+
+	Log.findOne()
+	    .sort({logId: -1})
+	    .exec(function(err, doc)
+	    {
+
+	    	var newLogId;
+	    	if(doc!=null)
+	    	 	newLogId = doc.logId+1;
+	    	 else
+	    	 	newLogId = 0;
+	        // ...
+	        console.log(newLogId);
+
+			//log posted doc
+			var log = new Log({logId: newLogId, 
+							   objectId: note._id, 
+							   eventType: "Insert", 
+							   timestamp: new Date, 
+							   version: 1, 
+							   random: Math.random()});
+
+			log.save(function (err) {
+			  if (err) // ...
+			  	console.log('error:' + err);
+			  else
+				console.log("save logged" + log);
+			});
+	    }
+	);
+
+	
+
+});
+
+app.get('/deleteAllLogs', function (req, res) {
+	Log.remove({}, function(err) {
+	if (err) // ...
+	  	res.send('error:' + err);
+	else
+		res.send("success!" + note);
+	});
+});
+
+app.get('/deleteAllNotes', function (req, res) {
+	Note.remove({}, function(err) {
+	if (err) // ...
+	  	res.send('error:' + err);
+	else
+		res.send("success!" + note);
+	});
+});
+
+//server config
+var server = app.listen(process.argv[3], function () {
   var host = server.address().address;
   var port = server.address().port;
 
