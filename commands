@@ -4,3 +4,6 @@ mongod --port 27017 --dbpath=./data
 curl to upload doc
 curl -H "Content-Type: application/json" -X POST -d '{"title":"Test4","note":"Test4"}' http://localhost:8080/doc
 
+curl to delete doc
+curl -X "DELETE" http://localhost:8080/doc/id
+
