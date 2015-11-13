@@ -31,7 +31,7 @@ var SyncLog = mongoose.model('SyncLog', {serverId: String, maxLogId: Number});
 
 
 app.get('/', function (req, res) {
-	Note.find().exec(function (err, note) {
+	Note.find().sort({title: 1}).exec(function (err, note) {
 			if (err) return handleError(err);
 			  res.render('index', { title: 'All Notes', docs: note });
 		});
