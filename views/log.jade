@@ -1,0 +1,21 @@
+extends ../node_modules/jade-bootstrap/layouts/starter
+block body
+	.container
+		table.table.table-striped
+			thead
+				tr
+					th Log Id
+					th Object Id
+					th Event Type
+					th Timestamp
+					th version
+					th random
+			tbody
+				- each item in logs
+					tr
+						td= item.logId
+						td= item.objectId
+						td= item.eventType
+						td= item.timestamp
+						td= item.version
+						td= item.random

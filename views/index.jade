@@ -1,0 +1,21 @@
+extends ../node_modules/jade-bootstrap/layouts/starter
+block body
+	.container
+		h1= "4660 NoteSync App"
+		table.table.table-striped
+			thead
+				tr
+					th Id
+					th Title
+					th Note
+			tbody
+				- each item in docs
+					tr
+						td= item._id
+						td= item.title
+						td= item.note
+		form(action="/doc" name="new-note", method="post")
+			input.input-block-level(type="text", name="title", placeholder="Title")
+			input.input-block-level(type="text", name="note", placeholder="Note")
+			button.btn.btn-large.btn-primary(type="submit") Add Note
+	

@@ -12,6 +12,8 @@ app.use( bodyParser.json() );
 app.use(bodyParser.urlencoded({
   extended: true
 }));
+app.set('views', './views');
+app.set('view engine', 'jade');
 
 //mongodb and schemas
 mongoose.connect('mongodb://localhost/'+process.argv[2]);
@@ -28,12 +30,19 @@ var Log = mongoose.model('Log', {logId: Number,
 var SyncLog = mongoose.model('SyncLog', {serverId: String, maxLogId: Number});
 
 
-//display servers docs on homepage
 app.get('/', function (req, res) {
+	Note.find().exec(function (err, note) {
+			if (err) return handleError(err);
+			  res.render('index', { title: 'All Notes', docs: note });
+		});
+});
+
+//display servers docs on homepage
+app.get('/docs', function (req, res) {
 
 	Note.find().exec(function (err, note) {
 		if (err) return handleError(err);
-		  res.send(note);
+		  res.json(note);
 	});
 });
 
@@ -41,7 +50,16 @@ app.get('/', function (req, res) {
 app.get('/log/:id', function (req, res) {
 Log.find({logId: { $gt: req.params.id } }).exec(function (err, log) {
 		if (err) return handleError(err);
-		  res.send(log);
+		  res.json(log);
+	});
+});
+
+//display log
+app.get('/viewLog', function (req, res) {
+
+	Log.find().exec(function (err, log) {
+		if (err) return handleError(err);
+		  res.render('log', { title: 'Log', logs: log });
 	});
 });
 
@@ -50,14 +68,14 @@ app.get('/log', function (req, res) {
 
 	Log.find().exec(function (err, log) {
 		if (err) return handleError(err);
-		  res.send(log);
+		  res.json(log);
 	});
 });
 
 app.get('/doc/:id', function (req, res) {
 Note.find({_id: req.params.id }).exec(function (err, note) {
 		if (err) return handleError(err);
-		  res.send(note);
+		  res.json(note);
 	});
 });
 
@@ -149,13 +167,26 @@ app.delete('/doc/:id', function(req, res) {
 });
 
 app.get('/sync', function (req, res) {
-	request.get('http://localhost:'+process.argv[4]+'/log', function (error, response, body) {
+  	var syncIndex=-1;
+  	var newMaxLogId=0;
+  	SyncLog.findOne({serverId: process.argv[4]})
+    .sort({maxLogId: -1})
+    .exec(function(err, doc) { 
+    	if(doc!=null)
+    		syncIndex = doc.maxLogId;
+
+
+    console.log("sync index: " + syncIndex);
+	request.get('http://localhost:'+process.argv[4]+'/log/'+syncIndex, function (error, response, body) {
 	  if (!error && response.statusCode == 200) {
-	    res.send(body);
 	    
+
+
 	    var bodyObject = JSON.parse(body);
+		res.render('log', { title: 'Log', logs: bodyObject });
 
 	    bodyObject.forEach(function(item) {	
+	    	newMaxLogId = Math.max(newMaxLogId, item.logId);
 
 		    Log.findOne({_id: item.objectId})
 		    .sort({logId: -1})
@@ -189,8 +220,6 @@ app.get('/sync', function (req, res) {
 								});
 							}
 
-			    			console.log(insertObject);
-			    			
 			    		} else if(item.eventType=="Delete" && body.length>2) {
 			    			var insertObject = JSON.parse(body);
 			    			var id = insertObject._id;
@@ -206,16 +235,27 @@ app.get('/sync', function (req, res) {
 			    }	
 		    });
 	  	});
+	var syncLog = new SyncLog({serverId: process.argv[4], maxLogId: newMaxLogId});
+	syncLog.save(function (err) {
+	  if (err) // ...
+	  	console.log(err);
+	  else
+		console.log("new log id: " + newMaxLogId);
+	});
+
 	  }
 	});
+  });
 });
 
 app.get('/deleteAllLogs', function (req, res) {
 	Log.remove({}, function(err) {
 	if (err) // ...
-	  	res.send('error:' + err);
-	else
-		res.send("success!");
+	  	console.log(err);	
+	});
+	SyncLog.remove({}, function(err) {
+	if (err) // ...
+		console.log(err);
 	});
 });
 
