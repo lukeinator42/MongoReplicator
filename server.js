@@ -203,7 +203,7 @@ app.get('/sync', function (req, res) {
 			    		
 			    		
 
-			    		if(item.eventType=="Insert" && body.length>2) {
+			    		if((item.eventType=="Insert" || item.eventType=="Sync") && body.length>2) {
 			    			var insertObject = JSON.parse(body);
 			    			var id = insertObject._id;
 			    			delete insertObject._id;
@@ -232,16 +232,47 @@ app.get('/sync', function (req, res) {
 			    			}
 			    		}
 			    	});
+			    	
+			    	//add log of sync action
+					Log.findOne()
+						    .sort({logId: -1})
+						    .exec(function(err, doc)
+						    {
+
+						    	var newLogId;
+						    	if(doc!=null)
+						    	 	newLogId = doc.logId+1;
+						    	 else
+						    	 	newLogId = 0;
+						        // ...
+						        console.log(newLogId);
+
+								//log posted doc
+								var log = new Log({logId: newLogId, 
+												   objectId: item.objectId, 
+												   eventType: "Sync", 
+												   timestamp: item.timestamp, 
+												   version: 1, 
+												   random: Math.random()});
+
+								log.save(function (err) {
+								  if (err) // ...
+								  	console.log('error:' + err);
+								  else
+									console.log("Sync logged" + log);
+								});
+						    }
+						);
 			    }	
 		    });
 	  	});
-	var syncLog = new SyncLog({serverId: process.argv[4], maxLogId: newMaxLogId});
-	syncLog.save(function (err) {
-	  if (err) // ...
-	  	console.log(err);
-	  else
-		console.log("new log id: " + newMaxLogId);
-	});
+		var syncLog = new SyncLog({serverId: process.argv[4], maxLogId: newMaxLogId});
+		syncLog.save(function (err) {
+		  if (err) // ...
+		  	console.log(err);
+		  else
+			console.log("new log id: " + newMaxLogId);
+		});
 
 	  }
 	});
