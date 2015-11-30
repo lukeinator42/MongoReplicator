@@ -8,4 +8,4 @@ curl to delete doc
 curl -X "DELETE" http://localhost:8080/doc/id
 
 curl to update
-curl -H "Content-Type: application/json" -X POST -d '{"id":"565ba7e334cc356c3722c7c2",title":"Test3","note":"Test Update"}' http://localhost:8080/updateDoc
+curl -H "Content-Type: application/json" -X POST -d '{"_id":"565bb12d16c9c24438c829ee","title":"Test3","note":"Test Update"}' http://localhost:8080/updateDoc
