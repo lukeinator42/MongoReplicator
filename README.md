@@ -12,6 +12,8 @@ To use install node.js and dependencies. Dependencies are:
 - express
 - body-parser
 - request
+- jade
+- jade-bootstrap
 
 ## Usage
 
