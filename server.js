@@ -123,6 +123,51 @@ app.post('/doc', function(req, res) {
 	);
 });
 
+//post a doc to the server
+app.post('/updateDoc', function(req, res) { 
+	console.log(req.body);
+
+	//post doc
+	/*var note = new Note(req.body);
+	note.save(function (err) {
+	  if (err) // ...
+	  	res.send('error:' + err);
+	  else
+		res.send("success!" + note);
+	});*/
+	Note.update({_id: req.body._id}, req.body, {upsert: true}, function (err) {console.log(err);});
+
+	Log.findOne()
+	    .sort({logId: -1})
+	    .exec(function(err, doc)
+	    {
+
+	    	var newLogId;
+	    	if(doc!=null)
+	    	 	newLogId = doc.logId+1;
+	    	 else
+	    	 	newLogId = 0;
+	        // ...
+	        console.log(newLogId);
+
+			//log posted doc
+			var log = new Log({logId: newLogId, 
+							   objectId: req.body._id, 
+							   eventType: "Update", 
+							   timestamp: new Date, 
+							   version: 1, 
+							   random: Math.random()});
+
+			log.save(function (err) {
+			  if (err) // ...
+	  			res.send('error:' + err);
+	  		  else
+				res.send("success!" + req.body);
+			});
+	    }
+	);
+});
+
 //delete a doc from the server
 app.delete('/doc/:id', function(req, res) { 
 	console.log(req.body);
@@ -186,6 +231,8 @@ app.get('/sync', function (req, res) {
 		res.render('log', { title: 'Log', logs: bodyObject });
 
 	    bodyObject.forEach(function(item) {	
+	    	var syncType = "Sync";
+
 	    	newMaxLogId = Math.max(newMaxLogId, item.logId);
 
 		    Log.findOne({_id: item.objectId})
@@ -203,7 +250,7 @@ app.get('/sync', function (req, res) {
 			    		
 			    		
 
-			    		if((item.eventType=="Insert" || item.eventType=="Sync") && body.length>2) {
+			    		if((item.eventType=="Insert" || item.eventType=="Sync" || item.eventType == "Update") && body.length>2) {
 			    			var insertObject = JSON.parse(body);
 			    			var id = insertObject._id;
 			    			delete insertObject._id;
@@ -220,16 +267,14 @@ app.get('/sync', function (req, res) {
 								});
 							}
 
-			    		} else if(item.eventType=="Delete" && body.length>2) {
-			    			var insertObject = JSON.parse(body);
-			    			var id = insertObject._id;
-
-			    			if(id) {
-			    				Note.remove({ _id: id }, function(err) {
+			    		} else if(item.eventType=="Delete" || "SyncDelete") {
+			    				syncType = "SyncDelete";
+			    				Note.remove({ _id: item.objectId }, function(err) {
 								    if(err)
 								    	console.log(err);
 								});
-			    			}
+			    			
+			    			
 			    		}
 			    	});
 			    	
@@ -250,7 +295,7 @@ app.get('/sync', function (req, res) {
 								//log posted doc
 								var log = new Log({logId: newLogId, 
 												   objectId: item.objectId, 
-												   eventType: "Sync", 
+												   eventType: syncType, 
 												   timestamp: item.timestamp, 
 												   version: 1, 
 												   random: Math.random()});
