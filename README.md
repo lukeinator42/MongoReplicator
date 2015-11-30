@@ -16,7 +16,7 @@ To use install node.js and dependencies. Dependencies are:
 ## Usage
 
 To start a server, pass three parameters like so:
-node server.js <database_port> <node_port> <peer_node_port>
+node server.js database_port node_port peer_node_port
 
 example starting 2 servers:
 
