@@ -1,10 +1,17 @@
 # 4660 NoteSync App
 
-This is a project for 4660. It is a node.js server that replicates mongodb databases in a peer-to-peer network. It provides an api for creating, updating, deleting and getting notes, as well as viewing the log of changes. 
+This is a project for CPSC 4660. It is a node.js server that replicates mongodb databases in a peer-to-peer network. It provides an api for creating, updating, deleting and getting notes, as well as viewing the log of changes. 
 
 ## Installation
 
-To use install node.js and dependencies found in server.js
+To use install node.js and dependencies. Dependencies are:
+
+- http
+- through2
+- mongoose
+- express
+- body-parser
+- request
 
 ## Usage
 
@@ -12,7 +19,9 @@ To start a server, pass three parameters like so:
 node server.js <database_port> <node_port> <peer_node_port>
 
 example starting 2 servers:
+
 node server.js 27017 8080 8081
+
 node server.js 27018 8081 8080
 
 ## Routes
@@ -28,4 +37,4 @@ node server.js 27018 8081 8080
 - get '/sync': syncs the node with its peer node. 
 
 ### Credits
-by Lukas Grasse for CPSC 4660. November 29, 2015
+by Lukas Grasse for CPSC 4660. November 29, 2015. Based on “EDB: a multi-master database for liquid multi-device software” published in Proceedings of the Second ACM International Conference on Mobile Software Engineering and Systems (MOBILESoft '15).
