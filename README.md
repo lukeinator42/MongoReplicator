@@ -33,6 +33,7 @@ node server.js 27018 8081 8080
 - get '/log': returns entire log in json format. 
 - get '/doc/:id': returns the note specified by the id in url parameter as json document. 
 - post '/doc': inserts new note into database. Takes note in json format as post data.
+- post '/updateDoc': Updates note in database. Takes note in json format as post data.
 - delete '/doc/:id': deletes the note specified by the id url parameter from the database. 
 - get '/sync': syncs the node with its peer node. 
 
